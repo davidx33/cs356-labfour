@@ -82,17 +82,18 @@ void sr_init(struct sr_instance *sr)
 struct sr_if *sr_get_interface_by_ip(struct sr_instance *sr, uint32_t ip)
 {
   struct sr_if *current_if = sr->if_list;
-
+  struct sr_if *dest_if = NULL;
   while (current_if)
   {
     if (current_if->ip == ip)
     {
-      return current_if;
+      dest_if = current_if;
+      break;
     }
     current_if = current_if->next;
   }
 
-  return NULL;
+  return dest_if;
 }
 
 struct sr_rt *sr_find_longest_prefix_match(struct sr_instance *sr, uint32_t dest_ip)
@@ -199,12 +200,15 @@ void sr_handlepacket(struct sr_instance *sr,
     struct sr_if *dest_if = sr_get_interface_by_ip(sr, ip_hdr->ip_dst);
     if (dest_if != NULL)
     {
-      uint8_t ip_proto_icmp = 0x01;
-      if (ip_hdr->ip_p == ip_proto_icmp)
+      if (ip_hdr->ip_p == ip_protocol_icmp)
       {
         sr_icmp_hdr_t *icmp_hdr = (sr_icmp_hdr_t *)(packet + sizeof(struct sr_ethernet_hdr) + sizeof(struct sr_ip_hdr));
-
-        if (icmp_hdr->icmp_type == 8 && icmp_hdr->icmp_code == 0)
+        if (icmp_hdr->icmp_type != 8)
+        {
+          printf("Not an ICMP ECHO packet.\n");
+          return;
+        }
+        else
         {
           uint8_t *icmp_reply_packet = (uint8_t *)malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_hdr_t));
 
@@ -225,17 +229,19 @@ void sr_handlepacket(struct sr_instance *sr,
           uint32_t temp_ip = reply_ip_hdr->ip_src;
           reply_ip_hdr->ip_src = reply_ip_hdr->ip_dst;
           reply_ip_hdr->ip_dst = temp_ip;
+          reply_ip_hdr->ip_len = htons(len - sizeof(sr_ethernet_hdr_t));
+          reply_ip_hdr->ip_p = ip_protocol_icmp;
           reply_ip_hdr->ip_ttl = 64;
           reply_ip_hdr->ip_sum = 0;
+          reply_ip_hdr->ip_sum = cksum(reply_ip_hdr, sizeof(sr_ip_hdr_t));
 
           uint8_t *payload = ((uint8_t *)icmp_hdr) + sizeof(struct sr_icmp_hdr);
           memcpy(((uint8_t *)reply_icmp_hdr) + sizeof(struct sr_icmp_hdr), payload, len - sizeof(struct sr_ethernet_hdr) - sizeof(struct sr_ip_hdr) - sizeof(struct sr_icmp_hdr));
 
-          memcpy(reply_eth_hdr->ether_dhost, reply_eth_hdr->ether_shost, ETHER_ADDR_LEN);
-          memcpy(reply_eth_hdr->ether_shost, dest_if->addr, ETHER_ADDR_LEN);
-
+          memcpy(reply_eth_hdr->ether_dhost, reply_eth_hdr->ether_shost, sizeof(uint8_t) * ETHER_ADDR_LEN);
+          memcpy(reply_eth_hdr->ether_shost, dest_if->addr, sizeof(uint8_t) * ETHER_ADDR_LEN);
+          reply_eth_hdr->ether_type = htons(ethertype_ip);
           sr_send_packet(sr, icmp_reply_packet, len, interface);
-
           free(icmp_reply_packet);
         }
       }
