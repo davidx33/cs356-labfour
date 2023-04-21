@@ -206,7 +206,7 @@ void sr_handlepacket(struct sr_instance *sr,
 
         if (icmp_hdr->icmp_type == 8 && icmp_hdr->icmp_code == 0)
         {
-          uint8_t *icmp_reply_packet = (uint8_t *)malloc(len);
+          uint8_t *icmp_reply_packet = (uint8_t *)malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_hdr_t));
 
           memcpy(icmp_reply_packet, packet, len);
 
@@ -412,4 +412,3 @@ void sr_handlepacket(struct sr_instance *sr,
     }
   }
 }
-
