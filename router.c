@@ -339,14 +339,13 @@ void sr_handlepacket(struct sr_instance *sr,
         te_icmp_hdr->icmp_sum = htons(checksum((uint16_t *)tmp_icmp_hdr_buffer, sizeof(sr_icmp_t3_hdr_t)));
         memcpy(&te_icmp_hdr, tmp_icmp_hdr_buffer, sizeof(sr_icmp_t3_hdr_t));
 
+
         sr_icmp_t3_hdr_t tmp_te_icmp_hdr;
         memcpy(&tmp_te_icmp_hdr, te_icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
-        uint8_t tmp_te_icmp_hdr_buffer[sizeof(sr_icmp_t3_hdr_t)];
-        memcpy(tmp_te_icmp_hdr_buffer, &tmp_te_icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
-        tmp_te_icmp_hdr.icmp_sum = htons(checksum((uint16_t *)tmp_te_icmp_hdr_buffer, sizeof(sr_icmp_t3_hdr_t)));
-        memcpy(&tmp_te_icmp_hdr, tmp_te_icmp_hdr_buffer, sizeof(sr_icmp_t3_hdr_t));
+        uint8_t te_icmp_hdr_buffer[sizeof(sr_icmp_t3_hdr_t)];
+        memcpy(te_icmp_hdr_buffer, te_icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
+        te_icmp_hdr->icmp_sum = htons(checksum((uint16_t *)te_icmp_hdr_buffer, sizeof(sr_icmp_t3_hdr_t)));
 
-        memcpy(te_icmp_hdr, &tmp_te_icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
 
         struct sr_if *src_if = sr_get_interface(sr, interface);
         te_ip_hdr->ip_src = src_if->ip;
@@ -358,14 +357,15 @@ void sr_handlepacket(struct sr_instance *sr,
         te_ip_hdr->ip_len = htons(sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t));
         te_ip_hdr->ip_id = 0;
         te_ip_hdr->ip_off = htons(IP_DF);
-        uint8_t tmp_te_ip_hdr_buffer[sizeof(sr_ip_hdr_t)];
-        memcpy(tmp_te_ip_hdr_buffer, te_ip_hdr, sizeof(sr_ip_hdr_t));
-        te_ip_hdr->ip_sum = htons(checksum((uint16_t *)tmp_te_ip_hdr_buffer, sizeof(sr_ip_hdr_t)));
-        memcpy(te_ip_hdr, tmp_te_ip_hdr_buffer, sizeof(sr_ip_hdr_t));
+        te_ip_hdr->ip_sum = 0;
 
         sr_ip_hdr_t tmp_te_ip_hdr;
         memcpy(&tmp_te_ip_hdr, te_ip_hdr, sizeof(sr_ip_hdr_t));
-        tmp_te_ip_hdr.ip_sum = htons(checksum((uint16_t *)&tmp_te_ip_hdr, sizeof(sr_ip_hdr_t)));
+        uint8_t tmp_te_ip_hdr_buffer[sizeof(sr_ip_hdr_t)];
+        memcpy(tmp_te_ip_hdr_buffer, &tmp_te_ip_hdr, sizeof(sr_ip_hdr_t));
+        tmp_te_ip_hdr.ip_sum = htons(checksum((uint16_t *)tmp_te_ip_hdr_buffer, sizeof(sr_ip_hdr_t)));
+
+
         memcpy(te_ip_hdr, &tmp_te_ip_hdr, sizeof(sr_ip_hdr_t));
 
         memcpy(te_eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHER_ADDR_LEN);
@@ -400,7 +400,10 @@ void sr_handlepacket(struct sr_instance *sr,
 
           sr_icmp_t3_hdr_t tmp_reply_icmp_hdr;
           memcpy(&tmp_reply_icmp_hdr, reply_icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
-          tmp_reply_icmp_hdr.icmp_sum = htons(checksum((uint16_t *)&tmp_reply_icmp_hdr, sizeof(sr_icmp_t3_hdr_t)));
+          uint8_t tmp_reply_icmp_hdr_buffer[sizeof(sr_icmp_t3_hdr_t)];
+          memcpy(tmp_reply_icmp_hdr_buffer, &tmp_reply_icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
+          tmp_reply_icmp_hdr.icmp_sum = htons(checksum((uint16_t *)tmp_reply_icmp_hdr_buffer, sizeof(sr_icmp_t3_hdr_t)));
+
           memcpy(reply_icmp_hdr, &tmp_reply_icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
 
           struct sr_if *src_if = sr_get_interface(sr, interface);
@@ -417,7 +420,10 @@ void sr_handlepacket(struct sr_instance *sr,
 
           sr_ip_hdr_t tmp_reply_ip_hdr_387;
           memcpy(&tmp_reply_ip_hdr_387, reply_ip_hdr, sizeof(sr_ip_hdr_t));
-          tmp_reply_ip_hdr_387.ip_sum = htons(checksum((uint16_t *)&tmp_reply_ip_hdr_387, sizeof(sr_ip_hdr_t)));
+          uint8_t tmp_reply_ip_hdr_387_buffer[sizeof(sr_ip_hdr_t)];
+          memcpy(tmp_reply_ip_hdr_387_buffer, &tmp_reply_ip_hdr_387, sizeof(sr_ip_hdr_t));
+          tmp_reply_ip_hdr_387.ip_sum = htons(checksum((uint16_t *)tmp_reply_ip_hdr_387_buffer, sizeof(sr_ip_hdr_t)));
+
           memcpy(reply_ip_hdr, &tmp_reply_ip_hdr_387, sizeof(sr_ip_hdr_t));
 
           memcpy(reply_eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHER_ADDR_LEN);
