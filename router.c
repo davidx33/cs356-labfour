@@ -252,7 +252,7 @@ void sr_handlepacket(struct sr_instance *sr,
       {
 
         uint8_t icmp_dest_unreachable_type = 3;
-        uint8_t icmp_net_unreachable_code = 0;
+        uint8_t icmp_net_unreachable_code = 3;
 
         unsigned int icmp_dest_unreachable_len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
 
@@ -262,6 +262,7 @@ void sr_handlepacket(struct sr_instance *sr,
         sr_ip_hdr_t *reply_ip_hdr = (sr_ip_hdr_t *)(icmp_dest_unreachable_packet + sizeof(sr_ethernet_hdr_t));
         sr_icmp_t3_hdr_t *reply_icmp_hdr = (sr_icmp_t3_hdr_t *)(icmp_dest_unreachable_packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
+        memcpy(reply_icmp_hdr->data, reply_ip_hdr, ICMP_DATA_SIZE);
         reply_icmp_hdr->icmp_type = icmp_dest_unreachable_type;
         reply_icmp_hdr->icmp_code = icmp_net_unreachable_code;
         reply_icmp_hdr->icmp_sum = 0;
@@ -366,7 +367,7 @@ void sr_handlepacket(struct sr_instance *sr,
         {
 
           uint8_t icmp_dest_unreachable_type = 3;
-          uint8_t icmp_net_unreachable_code = 0;
+          uint8_t icmp_net_unreachable_code = 3;
           unsigned int icmp_dest_unreachable_len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
 
           uint8_t *icmp_dest_unreachable_packet = (uint8_t *)malloc(icmp_dest_unreachable_len);
